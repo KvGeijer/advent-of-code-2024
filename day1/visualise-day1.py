@@ -28,7 +28,7 @@ def ints(string):
 
 def quicksort(arr):
     """Quicksort algorithm that returns a list of intermediate sorted states."""
-    steps = [arr.copy()]  # Record the initial state
+    steps = [(None, None, arr.copy())]  # Record the initial state
     quicksort_rec(arr, steps, 0, len(arr) - 1)
     return steps
 
@@ -62,16 +62,19 @@ def partition(arr, start, stop, states):
         else:
             # Swap!
             arr[low], arr[high] = (arr[high], arr[low])
-            states.append(arr.copy())
+            states.append((low, high, arr.copy()))
 
+    # Home-cooked thing to avoid inf loop
     while high < len(arr) and arr[high] == pivot:
         high += 1
 
     return low - 1, high
 
 
-def draw_bars(array, width, height, scaling_yf):
+def draw_bars(steps, width, height, scaling_yf):
     """Draw a bar chart representation of the array using PIL."""
+    low, high, array = steps
+
     img = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
     n = len(array)
@@ -82,7 +85,8 @@ def draw_bars(array, width, height, scaling_yf):
         y0 = height - bar_height
         x1 = x0 + bar_width - 1
         y1 = height
-        draw.rectangle([x0, y0, x1, y1], fill="black")
+        color = "black" if i != low and i != high else "red"
+        draw.rectangle([x0, y0, x1, y1], fill=color)
     return img
 
 
@@ -131,6 +135,30 @@ def add_count(base_img, value, font_size=120):
     return img
 
 
+def color_bars(img, index, left_arr, right_arr, scaling_yf, width, height):
+    """Function for coloring bars in the combined image at an index"""
+    draw = ImageDraw.Draw(img)
+    bar_width = (img.width - 2) // (len(left_arr) + len(right_arr))
+
+    # left
+    bar_height = scaling_yf(left_arr[index])
+    x0 = index * bar_width
+    y0 = height - bar_height
+    x1 = x0 + bar_width - 1
+    y1 = height
+    color = "red"
+    draw.rectangle([x0, y0, x1, y1], fill=color)
+
+    # right
+    bar_height = scaling_yf(right_arr[index])
+    x0 = index * bar_width + 2 + width
+    y0 = height - bar_height
+    x1 = x0 + bar_width - 1
+    y1 = height
+    color = "red"
+    draw.rectangle([x0, y0, x1, y1], fill=color)
+
+
 def gen_frames(left_steps, right_steps, diff_steps, output_dir):
     """Generate a series of images representing the sorting process."""
 
@@ -141,18 +169,18 @@ def gen_frames(left_steps, right_steps, diff_steps, output_dir):
     
     os.makedirs(output_dir, exist_ok=True)
 
-    lower = min(min(left_steps[0]), min(right_steps[0]))
-    upper = max(max(left_steps[0]), max(right_steps[0]))
-    width = 1000
+    lower = min(min(left_steps[0][2]), min(right_steps[0][2]))
+    upper = max(max(left_steps[0][2]), max(right_steps[0][2]))
+    width = 1000 # Hard coded after input size
     height = 668*2
     scaling_yf = lambda y: int(height*(y-lower + upper/50)/(upper*1.02 - lower))
 	
     # First visualize the sorting of the two arrays together.
     sort_iters = max(len(left_steps), len(right_steps))
     for i in range(sort_iters):
-        left_step = left_steps[i] if i < len(left_steps) else left_steps[-1]
-        right_step = right_steps[i] if i < len(right_steps) else right_steps[-1]
-        print(f"{i}/{sort_iters}")
+        left_step = left_steps[i] if i < len(left_steps) else (None, None, left_steps[-1][2])
+        right_step = right_steps[i] if i < len(right_steps) else (None, None, right_steps[-1][2])
+        print(f"Sorting: {i}/{sort_iters}")
 
         left_img = draw_bars(left_step, width, height, scaling_yf)
         right_img = draw_bars(right_step, width, height, scaling_yf)
@@ -160,13 +188,21 @@ def gen_frames(left_steps, right_steps, diff_steps, output_dir):
         img = combine_sorts(left_img, right_img)
         img.save(f"{output_dir}/frame_{i:04d}.png")
 
+    # Do a last image, without any coloring of the bars
+    left_img = draw_bars((None, None, left_step[2]), width, height, scaling_yf)
+    right_img = draw_bars((None, None, right_step[2]), width, height, scaling_yf)
+
+    base = combine_sorts(left_img, right_img)
+    base.save(f"{output_dir}/frame_{sort_iters:04d}.png")
+
     # Then show the running sum of differences.
     # Would be great to do this visually, but for now just a number
-    base = img
     for (i, value) in enumerate(diff_steps):
         print(f"Nbr: {i}/{len(diff_steps)}")
         img = add_count(base, value)
-        img.save(f"{output_dir}/frame_{i+sort_iters:04d}.png")
+        if i > 0:
+            color_bars(img, i - 1, left_step[2], right_step[2], scaling_yf, width, height)
+        img.save(f"{output_dir}/frame_{(i+sort_iters+1):04d}.png")
 
 
 def gen_video(output_dir, framerate = 120):
@@ -178,7 +214,7 @@ def gen_video(output_dir, framerate = 120):
         "-i", f"{output_dir}/frame_%04d.png",
         "-pix_fmt", "yuv420p",
         name,
-        "-y",  # Overwrite existing video without asking
+        "-y", 
     ]
     subprocess.run(ffmpeg_cmd, check=True)
     print(f"output video saved as {name}")
@@ -193,7 +229,7 @@ def main():
     right_steps = quicksort(input[1::2])
 
     prefix = [0]
-    for (left, right) in zip(left_steps[-1], right_steps[-1]):
+    for (left, right) in zip(left_steps[-1][2], right_steps[-1][2]):
         prefix.append(prefix[-1] + abs(left - right))
 
     out_dir = "frames"
