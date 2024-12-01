@@ -1,0 +1,77 @@
+// File with helper functions for Everybody Codes
+
+/// Checks if a value is between two others (inclusive)
+fn in_range(val, from, to) -> from <= val and val <= to;
+
+/// Returns true if a char is between "0" and "9"
+///
+/// Will give strange results if now used on a string.
+/// Crashes if multiple chars
+fn is_digit(char) -> {
+	1 = len(char);
+	char >> in_range("0", "9")
+
+}
+
+/// Extracts all integers from a string
+fn ints(string) -> {
+	nbr := nil;
+	neg := false;
+	ints := [];
+	for char in string if char >> is_digit {
+		if nbr == nil nbr = 0;
+		nbr = 10*nbr + int(char)
+	} else if nbr != nil {
+		(if neg (-nbr) else nbr) >> push(ints);
+		nbr = nil;
+		neg = false;
+	} else {
+		neg = char == '-';
+	}
+	
+	if nbr != nil (if neg (-nbr) else nbr) >> push(ints);
+
+	ints
+}
+
+/// Counts the occurrence of every item in an iterable
+fn count(items) -> {
+	counter := dict();
+	for item in items {
+		if !in(item, counter) counter[item] = 1
+		else counter[item] += 1;
+	}
+	counter
+}
+
+/// Flattens a list of lists to one list
+fn concat(coll) -> {
+	res := [];
+	for value in coll {
+		res = res ++ value;
+	}
+	res
+}
+
+/// Stores al chars string into a dict such that dict[[x, y]] = split(string, "\n")[x][y]
+fn parse_matrix_dict(string) -> {
+	// TODO: For this to be useful, we need default_dict
+	d := dict(); 
+	for (row, line) in string >> split("\n") >> enumerate
+		for (col, char) in line >> enumerate
+			d[[row, col]] = char;
+	d
+}
+
+/// Computes 4 neighbors of a 2d coordinate
+fn neighs4((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1]];
+
+/// Computes 5 neighbors of a 2d coordinate
+fn neighs5((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1], [x, y]];
+
+/// Computes 8 neighbors of a 2d coordinate
+fn neighs8((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1], [x+1, y+1], [x+1, y-1], [x-1, y+1], [x-1, y-1]];
+
+/// Computes 9 neighbors of a 2d coordinate
+fn neighs9((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1], [x+1, y+1], [x+1, y-1], [x-1, y+1], [x-1, y-1], [x, y]];
+

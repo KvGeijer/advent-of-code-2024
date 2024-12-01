@@ -1,0 +1,26 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+lists := read("input.txt") 
+    >> trim 
+    >> split("\n") 
+    >> map(ints)
+    >> \input -> [
+        map(input, \>> [0]), 
+        map(input, \>> [1])
+    ];
+
+// Part 1
+zip(lists[0] >> sort, lists[1] >> sort)
+    >> map(\(x, y) -> abs(x - y))
+    >> sum
+    >> print;
+
+// Part 2
+counts1 := lists[1] >> count;
+lists[0]
+    >> set
+    >> keys
+    >> map(\item -> item * get_or(item, counts1, 0))
+    >> sum
+    >> print;
