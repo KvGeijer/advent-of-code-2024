@@ -1,0 +1,21 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+input := read("input.txt")
+	>> split("\n")
+	>> map(ints);
+
+// Part 1
+fn issafe(report) -> 
+	(report == sort(report) or report == sort(report)[::-1]) and 
+		(zip(report, report[1:]) >> all(\(x, y) -> (abs(x-y) >= 1) and (abs(x-y) <= 3)));
+
+input >> map(issafe) >> sum >> print;
+
+// Part 2
+fn issafe_damp(report) -> {
+	for i in [0:len(report)] if issafe(report[0:i] ++ report[i+1:]) return true;
+	false
+}
+
+input >> map(issafe_damp) >> sum >> print;
