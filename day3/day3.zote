@@ -3,19 +3,18 @@ include!("../aoc.zote");
 
 input := read('input.txt');
 
-fn parse_int(input, i) -> {
+fn parse_int(input, i) -> 
     if !is_digit(input[i]) [false, nil] // Can not be negative numbers in mult
     else {
         j := i;
         while is_digit(input[j]) j+= 1; // No danger of eof due to ending \n
         [int(input[i:j]), j]
     } 
-}
 
 fn parse_mults(dyn) -> {
     prod := 0;
     do := true;
-    for (i, c) in enumerate(input) 
+    for i in [0:len(input)]
         if input[i:i+4] == "do()" do = true
         else if input[i:i+7] == "don't()" do = false    
         else if (!dyn or do) and input[i:i+4] == "mul(" {
