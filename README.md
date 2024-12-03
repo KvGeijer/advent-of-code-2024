@@ -6,7 +6,10 @@ This repo contains my code for [Advent of Code 2024](https://adventofcode.com/20
 
 ### Day 1: Historian Hysteria
 
-[![Historian Hysteria](https://img.youtube.com/vi/Syse-axV6mA/0.jpg)](https://www.youtube.com/watch?v=Syse-axV6mA)
+
+https://github.com/user-attachments/assets/c49d58c8-d193-4506-9de2-fa85629584dc
+
+
 
 ### Day 2: Red-Nosed Reports
 
