@@ -4,19 +4,11 @@ import time
 with open("input.txt") as f:
     input = f.read()
 
+# A list with (start, stop, color) for all colored parts
+colors = []
 
-# Just use the same pattern as my zote code, but only for part 2
-# But now also record states. What do I want to show?
-# Show the whole input string, but highlight the character i in each step
-# If we match something, highlight it in green or something for two frames?
-# Also, show the do and prod variable over time. We now have a reactive state, mostly recording diffs:
-# State: (
-#            (highlight_cursor: bool, ind),
-#            (add_highlight: bool, highlight_color: str, start, stop),
-#            enabled: bool,
-#            result: int
-# )
-states = []
+# Events, either changin score or enabled/disabled ("score" or "enable", new score or true/false, index)
+events = []
 
 
 def parse_int(input, i):
@@ -33,19 +25,17 @@ def parse_mults(input):
     prod = 0
     do = True
     i = 0
-    states.append(((False, None), (False, None, None, None), do, prod))
     while i < len(input):
         if input[i:i+4] == "do()":
-            states.append
             do = True
-            states.append(
-                ((False, i), (True, "enabled", i, i+4), do, prod))
             i += 4
+            events.append(("enable", True, i - 2))
+            colors.append((i-4, i, "enabled"))
         elif input[i:i+7] == "don't()":
             do = False
-            states.append(
-                ((False, i), (True, "disabled", i, i+7), do, prod))
             i += 7
+            events.append(("enable", False, i - 3))
+            colors.append((i-7, i, "disabled"))
         elif (input[i:i+4] == "mul("):
             x, j = parse_int(input, i+4)
             if x is False or input[j] != ',':
@@ -57,19 +47,18 @@ def parse_mults(input):
                 continue
             if do:
                 prod += x * y
-                states.append(
-                    ((False, i), (True, "tracked", i, j+1), do, prod))
+                color = "tracked"
             else:
-                states.append(
-                    ((False, i), (True, "ignored", i, j+1), do, prod))
+                color = "ignored"
+            events.append(("score", prod, (i+j)//2))
+            colors.append((i, j+1, color))
             i = j + 1
         else:
-            states.append(((True, i), (False, None, None, None), do, prod))
             i += 1
     return prod
 
 
-print(parse_mults(input))
+parse_mults(input)
 
 
 def get_color_by_name(name):
@@ -80,7 +69,7 @@ def get_color_by_name(name):
     elif name == "tracked":
         return pr.GOLD
     elif name == "ignored":
-        return pr.GRAY
+        return pr.DARKPURPLE
     elif name == "back":
         return pr.BLACK
     elif name == "cursor":
@@ -88,118 +77,111 @@ def get_color_by_name(name):
     elif name == "normal":
         return pr.WHITE
     else:
-        return pr.BLACK
+        return pr.GRAY
 
 
-def draw_frames():
+def get_char_colors(colors, input_len):
+    out = [get_color_by_name("normal")]*input_len
+    for (start, stop, color) in colors:
+        for ind in range(start, stop):
+            out[ind] = get_color_by_name(color)
+    return out
+
+
+def draw_frames(events, colors):
     # Initialize the window
     height = 1640
     width = 2920
     pr.init_window(width, height, "Mull It Over")
 
     # Set target FPS
-    pr.set_target_fps(120)
+    pr.set_target_fps(300)
 
-    # Initialize permanent highlights
-    permanent_highlights = []
+    # Get char colors in advance
+    char_colors = get_char_colors(colors, len(input))
+    colored_chars = list(zip(input, char_colors))
+
+    print(len(colored_chars))
+    print(colored_chars[-2])
+
+    # Get result and enabled in avcance
+    results = [0]
+    enabled = [True]
+    events.append((None, None, len(input)*2))
+    events = events[::-1]
+    for ind in range(1, len(input)):
+        used = False
+        if events[-1][2] == ind and events[-1][0] == "score":
+            results.append(events[-1][1])
+            used = True
+        else:
+            results.append(results[-1])
+        if events[-1][2] == ind and events[-1][0] == "enable":
+            enabled.append(events[-1][1])
+            used = True
+        else:
+            enabled.append(enabled[-1])
+
+        if used:
+            events.pop()
+
+    # Draw the text character by character, getting some info
+    default_color = get_color_by_name("default")
+    font_size = 20
+    char_width = pr.measure_text("A", font_size)
+    max_chars_per_line = (width - 10) // char_width
 
     frame = 0
-    while not pr.window_should_close() and frame < len(states):
+    while not pr.window_should_close() and frame < len(colored_chars):
         # Handle events
         pr.begin_drawing()
         pr.clear_background(get_color_by_name("back"))
 
-        # Get the current state
-        state = states[frame]
-        highlight_cursor, ind = state[0]
-        add_highlight, highlight_color, start, stop = state[1]
-        enabled = state[2]
-        result = state[3]
-
-        # Update permanent highlights
-        if add_highlight:
-            permanent_highlights.append((highlight_color, start, stop))
-
         # Only show every 4th frame, for speed
-        if (frame % 4) != 0:
+        if (frame % 4) != 0 and frame < len(colored_chars) - 7:
             frame += 1
             continue
-
-        # Build the list of colors for characters in window
-        window_char_colors = [get_color_by_name("normal")] * len(input)
-
-        # Apply permanent highlights
-        for color_name, start_idx, end_idx in permanent_highlights:
-            color = get_color_by_name(color_name)
-            for i in range(start_idx, end_idx):
-                window_char_colors[i] = color
-
-        # Apply cursor highlight
-        if highlight_cursor:
-            idx_in_window = ind
-            window_char_colors[idx_in_window] = get_color_by_name("cursor")
-
-        # Draw the text character by character
-        font_size = 20
-        char_width = pr.measure_text("A", font_size)
-        max_chars_per_line = (width - 10) // char_width  # text_width
-
-        # Build the lines
-        lines = []
-        current_line = ""
-        current_colors = []
-        current_line_length = 0
-        for i, char in enumerate(input):
-            current_line += char
-            current_colors.append(window_char_colors[i])
-            current_line_length += 1
-            if current_line_length >= max_chars_per_line:
-                lines.append((current_line, current_colors))
-                current_line = ""
-                current_colors = []
-                current_line_length = 0
-        if current_line:
-            lines.append((current_line, current_colors))
 
         # Draw the lines
         text_x = 10
         text_y = 10
         line_height = font_size + 2  # Line spacing
-        for line_num, (line_text, line_colors) in enumerate(lines):
-            y = text_y + line_num * line_height
-            x = text_x
+        for ind, (char, color) in enumerate(colored_chars):
+            if ind >= frame:
+                color = default_color
 
-            for j, char in enumerate(line_text):
-                color = line_colors[j]
-                pr.draw_text(char, x, y, font_size, color)
-                x += char_width
+            pr.draw_text(char, text_x, text_y, font_size, color)
+            text_x += char_width
+            if text_x - 10 == max_chars_per_line*char_width:
+                text_x = 10
+                text_y += line_height
 
         # Display the enabled and result variables. A bit hacky
         var_font_size = font_size * 3
         enabled_text = "Enabled: "
-        pr.draw_text(enabled_text, int(width*0.3), text_y + len(lines)
-                     * line_height + 20, var_font_size, get_color_by_name("normal"))
+        pr.draw_text(enabled_text, int(width*0.3), text_y + 30,
+                     var_font_size, get_color_by_name("normal"))
         enabled_offset = pr.measure_text(enabled_text, var_font_size)
-        enabled_text = str(enabled)
+        enabled_text = str(enabled[frame])
         enabled_color = get_color_by_name(
-            "enabled") if enabled else get_color_by_name("disabled")
-        pr.draw_text(enabled_text, int(width*0.3) + enabled_offset, text_y + len(lines)
-                     * line_height + 20, var_font_size, enabled_color)
+            "enabled") if enabled[frame] else get_color_by_name("disabled")
+        pr.draw_text(enabled_text, int(width*0.3) + enabled_offset,
+                     text_y + 30, var_font_size, enabled_color)
 
         result_text = "Result: "
-        pr.draw_text(result_text, int(width*0.55), text_y + len(lines)
-                     * line_height + 20, var_font_size, get_color_by_name("normal"))
+        pr.draw_text(result_text, int(width*0.55), text_y + 30,
+                     var_font_size, get_color_by_name("normal"))
         result_offset = pr.measure_text(result_text, var_font_size)
-        result_text = str(result)
+        result_text = str(results[frame])
         result_color = get_color_by_name("tracked")
-        pr.draw_text(result_text, int(width*0.55) + result_offset, text_y + len(lines)
-                     * line_height + 20, var_font_size, result_color)
+        pr.draw_text(result_text, int(width*0.55) + result_offset, text_y
+                     + 30, var_font_size, result_color)
 
         pr.end_drawing()
         if frame == 0:
             time.sleep(3)  # To give you time to start recording
 
-        # Take a screenshot of the image, to generate the video
+        # Take a screenshot of the image, to generate the video. Too slow, so use screen recording instead
         # if frame % 4 == 0:
         # nbr = frame//4
         # pr.take_screenshot(f"frames/frame_{nbr:05d}.png")
@@ -212,4 +194,4 @@ def draw_frames():
     pr.close_window()
 
 
-draw_frames()
+draw_frames(events, colors)
