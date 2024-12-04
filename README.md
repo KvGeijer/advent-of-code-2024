@@ -13,3 +13,7 @@ https://github.com/user-attachments/assets/a8859ebb-2d72-4fc0-8159-08521d5c6d91
 
 ### Day 3: Mull It Over
 https://github.com/user-attachments/assets/15fdc99f-e654-4f5a-9db8-80904c0d29dd
+
+### Day 4: Ceres Search
+https://github.com/user-attachments/assets/0f74e9f9-c76e-4c73-aa41-224bab237884
+
