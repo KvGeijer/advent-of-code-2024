@@ -1,0 +1,53 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+
+input := read("input.txt") >> trim >> parse_matrix_dict;
+
+search := ["XMAS", "SAMX"];
+
+rows := input >> keys >> map(\>> [0]) >> maximum >> add(1);
+cols := input >> keys >> map(\>> [1]) >> maximum >> add(1);
+
+// Part 1
+found := 0;
+for row in [0:rows] for col in [0:cols] {
+    // Down
+    w := "";
+    for ro in [0:4] [row + ro, col] >> get_or(input, ".") >> push(w);
+    found += w >> in(search);
+
+    // Right
+    w := "";
+    for co in [0:4] [row, col + co] >> get_or(input, ".") >> push(w);
+    found += w >> in(search);
+
+    // Down Right
+    w := "";
+    for o in [0:4] [row + o, col + o] >> get_or(input, ".") >> push(w);
+    found += w >> in(search);
+
+    // Down Left
+    w := "";
+    for o in [0:4] [row + o, col - o] >> get_or(input, ".") >> push(w);
+    found += w >> in(search);
+}
+found >> print;
+
+// Part 2
+search := ["MAS", "SAM"];
+found := 0;
+for row in [0:rows] for col in [0:cols] {
+    // Down Right
+    w := "";
+    for o in [-1:2] [row + o, col + o] >> get_or(input, ".") >> push(w);
+    if w >> in(search) >> not continue;
+
+    // Down Left
+    w := "";
+    for o in [-1:2] [row + o, col - o] >> get_or(input, ".") >> push(w);
+    found += w >> in(search);
+}
+
+found >> print;
+
