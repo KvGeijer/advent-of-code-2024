@@ -1,0 +1,41 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+(rules, updates) := read("input.txt") >> trim >> split("\n\n") >> map(\>> split("\n") >> map(ints));
+nbrs := ints(read("input.txt"));
+
+// Create dependencies
+deps := dict();
+for nbr in nbrs deps[nbr] = set();
+for (pre, post) in rules pre >> insert(deps[post]);
+
+fn isvalid(update) -> {
+    use := set(update);
+    done := set();
+    for item in update {
+        for dep in deps[item] >> intersect(use) >> keys if dep >> in(done) >> not 
+            return false;
+        item >> insert(done);
+    }
+    true
+}
+
+// Score of the correctly ordered list
+fn score(update) -> {
+    use := set(update);
+    done := [];
+    while len(done) < len(update) for item in update if not(item >> in(done)) // For every item still not started 
+        if deps[item] >> intersect(use) >> keys >> all(\>> in(done))          // If all its dependencies are done
+            item >> push(done);
+    done[len(done)/2]
+}
+
+[true, false] // Whether we want to operate on valid or not valid lists (part 1 or 2) 
+    >> map(\incorr -> updates 
+        >> filter(\>> isvalid >> eq(incorr)) 
+        >> map(score) 
+        >> sum 
+        >> print
+    );
+    
+
