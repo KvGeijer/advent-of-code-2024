@@ -1,0 +1,66 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+// Generic 2D helpers
+fn vadd((x1, y1), (x2, y2)) -> [x1 + x2, y1 + y2];
+
+fn rot(dir) -> match dir {
+	(0,  1) -> [1,  0],
+	(1,  0) -> [0, -1],
+	(0, -1) -> [-1, 0],
+	(-1, 0) -> [0,  1],
+}
+
+str_mat := read("input.txt") 
+	>> parse_matrix_dict; 
+
+bool_mat := str_mat
+	>> map(\(key, val) -> [key, val != "#"]) 
+	>> dict;
+
+// starting position
+(pos, dir_str) := str_mat >> list >> filter(\(ind, c) -> c != '.' and c != '#') >> [0];
+dir := match dir_str {
+	'v' -> [1, 0],
+	'>' -> [0, 1],
+	'^' -> [-1,0],
+	'<' -> [0,-1],
+};
+
+// For part 2
+start_pos := pos;
+start_dir := dir;
+
+visited := set();
+while not(in([pos, dir], visited)) and in(pos, bool_mat) {
+	[pos, dir] >> insert(visited);
+	
+	while !get_or(vadd(pos, dir), bool_mat, true) {
+		dir = rot(dir);
+	} 
+
+	pos = vadd(pos, dir);
+}
+
+// Part 1
+visited >> map(\((p, _), _) -> p) >> set >> len >> print;
+
+// Part 2
+print("Warning, this 'cleaned up' solution takes around a minute to run");
+visited >> map(\((p, _), _) -> p) >> set >> list >> filter(\(obs_pos, _) -> obs_pos != start_pos and {
+	pos := start_pos;
+	dir := start_dir;
+	mat := bool_mat >> deepclone;
+	mat[obs_pos] = false;
+	visited := set();
+	while not(in([pos, dir], visited)) and in(pos, mat) {
+		[pos, dir] >> insert(visited);
+	
+		while !get_or(vadd(pos, dir), mat, true) 
+			dir = rot(dir);
+
+		pos = vadd(pos, dir);
+	}
+	pos >> in(mat)
+}) >> len >> print;
+
