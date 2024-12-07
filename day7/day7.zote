@@ -1,0 +1,18 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+eqs := read("input.txt")
+    >> split("\n")
+    >> map(\>> ints)
+    >> map(\ints -> [ints[0], ints[1:]]);
+
+fn valid((res, nums), conc_ok) -> val_rec(nums[0], nums, 1, res, conc_ok);
+
+fn val_rec(acc, nums, ind, target, conc_ok) -> 
+    if ind == len(nums) 
+        acc == target
+    else val_rec(acc*nums[ind], nums, ind + 1, target, conc_ok) or 
+         val_rec(acc+nums[ind], nums, ind + 1, target, conc_ok) or
+         (conc_ok and val_rec(int(str(acc) ++ str(nums[ind])), nums, ind + 1, target, conc_ok)); // Not very efficient, but I realize I don't have the log function
+
+[false, true] >> map(\p2 -> eqs >> filter(\>> valid(p2)) >> map(\>> [0]) >> sum >> print);
