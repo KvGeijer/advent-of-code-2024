@@ -1,0 +1,24 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+mat := read("input.txt") >> parse_matrix_dict;
+
+// Generic helper functions for 2D
+fn vsub((x1, y1), (x2, y2)) -> [x1 - x2, y1 - y2];
+fn vadd((x1, y1), (x2, y2)) -> [x1 + x2, y1 + y2];
+
+antinodes := set();
+for (pos1, freq1) in mat if freq1 != '.' for (pos2, freq2) in mat if pos1 != pos2 and freq1 == freq2 {
+    diff := vsub(pos2, pos1); // Vec from pos1 to pos2
+    pos2 >> vadd(diff) >> insert(antinodes);
+    pos1 >> vsub(diff) >> insert(antinodes);
+}
+antinodes >> keys >> filter(\>> in(mat)) >> len >> print;
+
+for (pos1, freq1) in mat if freq1 != '.' for (pos2, freq2) in mat if pos1 != pos2 and freq1 == freq2 {
+    diff := vsub(pos2, pos1); // Vec from pos1 to pos2
+    while (pos2 = pos2 >> vadd(diff)) >> in(mat) {};
+    while (pos2 = pos2 >> vsub(diff)) >> in(mat) pos2 >> insert(antinodes);
+}
+antinodes >> keys >> filter(\>> in(mat)) >> len >> print;
+
