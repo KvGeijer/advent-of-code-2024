@@ -1,13 +1,34 @@
 with open("input.txt", 'r') as f:
 	lines = f.readlines()
 
-def valid(acc, ints, target, conc_ok):
-	if not ints:
-		return acc == target
+def valid(ints, target, p2):
+	if res := valid_rec(ints[0], ints[1:], target, p2):
+		res.append(str(ints[0]))
+		print(f"Original {ints}, solved {' '.join(reversed(res))}")
+		return " ".join(res)
 	else:
-		return valid(acc * ints[0], ints[1:], target, conc_ok) \
-			or valid(acc + ints[0], ints[1:], target, conc_ok) \
-			or conc_ok and valid(int(str(acc) +  str(ints[0])), ints[1:], target, conc_ok)
+		return None
+		
+def valid_rec(acc, ints, target, conc_ok):
+	if not ints:
+		if acc == target:
+			return [""]
+		else:
+			return None
+	elif (res := valid_rec(acc * ints[0], ints[1:], target, conc_ok)) is not None:
+		res.append(str(ints[0]))
+		res.append('*')
+		return res
+	elif (res := valid_rec(acc + ints[0], ints[1:], target, conc_ok)) is not None:
+		res.append(str(ints[0]))
+		res.append('+')
+		return res
+	elif conc_ok and (res := valid_rec(int(str(acc) +  str(ints[0])), ints[1:], target, conc_ok)) is not None:
+		res.append(str(ints[0]))
+		res.append('++')
+		return res
+	else:
+		return None
 
 for p2 in [False, True]:
 	tot = 0
@@ -15,7 +36,7 @@ for p2 in [False, True]:
 		(target, rest) = line.split(": ")
 		target = int(target)
 		ints = [int(c) for c in rest.split(' ')]
-		if valid(ints[0], ints[1:], target, p2):
+		if valid(ints, target, p2):
 			tot += target
 	print(tot)
 	
