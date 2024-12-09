@@ -1,0 +1,218 @@
+print("OBS: This is the worst code I have written all year (maybe ever).");
+print("I wish I could have said that I was drunk.");
+print("After a while, when I realized how fucked my code was, I just gave up");
+print("and decided to solve it with the most inefficient solution known to man.");
+print("");
+print("I have not even thought about time complexity, but takes over 2 min for part 2.");
+print("Code for part 1 is commented out, and while ugly as shit, is at least quite fast");
+
+
+
+
+
+include!("stdlib");
+include!("../aoc.zote");
+
+input := read("input.txt") >> trim;
+input_ints := input >> map(int);
+
+fn new(prev, start, stop, id) -> {
+    d := dict();
+    d['prev'] = prev;
+    d['start'] = start;
+    d['stop'] = stop; // Not inclusive
+    d['id'] = id;
+    d['next'] = nil;
+    d
+    
+}
+
+head := new(nil, 0, int(input[0]), 0);
+tail := head;
+// print(input_ints);
+for (id, (padd, use)) in enumerate(zip(input_ints[1::2], input_ints[2::2])) {
+    if padd > 0 {
+        tail['next'] = new(tail, tail['stop'], tail['stop'] + padd, -1); // Padding
+        tail = tail['next'];
+    }
+    if use > 0 {
+        tail['next'] = new(tail, tail['stop'], tail['stop'] + use, id + 1);
+        tail = tail['next'];
+    }
+}
+
+before_padding := head;
+last_real := tail;
+
+fn print_all(head) -> {
+    curr := head;
+    out := [];
+    while curr {
+        size := curr['stop'] - curr['start'];
+        // [0:size] >> map(\>> const(str(curr['id']) ++ ':' ++ str(curr['start']) ++ "-" ++ str(curr['stop'])) >> push(out)); 
+        [0:size] >> map(\>> const(str(curr['id'])) >> push(out)); 
+        curr = curr['next'];
+    }
+    print(out);
+}
+
+// print_all(head);
+
+// while before_padding['start'] < last_real['start'] {
+//     padding := before_padding['next'];
+//     padding_space := padding['stop'] - padding['start'];
+//     use_space := last_real['stop'] - last_real['start'];
+//     if padding_space > use_space {
+//         // Move the used one to part of the padding
+//         use := last_real;
+//         last_real = last_real['prev'];
+//         while last_real['id'] == -1 last_real = last_real['prev'];
+//         last_real['next'] = nil;
+//         use['start'] = padding['start'];
+//         use['stop'] = use['start'] + use_space;
+//         padding['start'] += use_space;
+//         padding['prev']['next'] = use;
+//         use['prev'] = padding['prev'];
+//         use['next'] = padding;
+//         padding['prev'] = use;
+//         before_padding = use;
+//     } else if padding_space < use_space {
+//         // Replace the padding with part of the used one
+//         padding['id'] = last_real['id'];
+//         last_real['stop'] -= padding_space;
+//         before_padding = padding;
+//         while before_padding['next'] and before_padding['next']['id'] != -1 before_padding = before_padding['next'];
+//     } else {
+//         // Replace the padding with the real one
+//         padding['id'] = last_real['id'];
+//         last_real = last_real['prev'];
+//         while last_real['id'] == -1 last_real = last_real['prev'];
+//         last_real['next'] = nil;
+//         before_padding = padding;
+//         while before_padding['next']['id'] != -1 before_padding = before_padding['next'];
+        
+//     }
+// }
+
+// print('done');
+// print_all(head);
+
+
+// checksum := 0;
+// ind := 0;
+// curr := head;
+// // print(last_real['stop']);
+// while (ind += 1) < last_real['stop'] {
+//     if curr['stop'] <= ind curr = curr['next'];
+
+//     checksum += curr['id'] * ind;
+//     print("adding ", curr['id'], "*",ind);
+// }
+// print(checksum);
+
+paddings := [];
+curr := head;
+while curr {
+    if curr['id'] == -1 { 
+        // size avialable, negative start (prefer early ones)
+        // prio := [curr['stop'] - curr['start'], -curr['start']];
+        push(curr, paddings);
+    }
+    curr = curr['next'];
+}
+
+// print_all(head);
+
+fn find_best(paddings, use_size) -> {
+    best := nil;
+    best_i := nil;
+    best_start := 100000000;
+    for (i, padding) in enumerate(paddings) {
+        p_size := padding['stop'] - padding['start'];
+         if p_size >= use_size and (best == nil or best['start'] > padding['start']) {
+            best = padding;
+            best_i = i;
+        }
+        
+    }
+
+    
+    if best best_i >> remove(paddings);
+    best
+}
+
+to_move := last_real;
+while to_move {
+    // print("moving?");
+    print(to_move['id']);
+    if to_move['id'] != -1 {
+        use_space := to_move['stop'] - to_move['start'];
+        // ((padd_space, padd_neg_start), padding) := pop(paddings); 
+        padding := find_best(paddings, use_space);
+        if !padding or padding['start'] > to_move['start'] {
+            to_move = to_move['prev'];
+            continue;
+        }
+
+        padd_space := padding['stop'] - padding['start'];
+
+        // can we replace?
+        if padd_space == use_space {
+            // We can replace the padding with it. Also unlink the moved one
+            padding['id'] = to_move['id'];
+
+            // Add it as free real estate
+            new_padd := to_move;
+            new_padd['id'] = -1;
+            push(new_padd, paddings);
+
+            to_move = to_move['prev'];
+        } else if padd_space > use_space {
+            // We can move it to before padding, and shrink padding
+            moved := clone(to_move);
+
+            // Free real estate
+            new_padd := to_move;
+            to_move = to_move['prev'];
+            new_padd['id'] = -1;
+            push(new_padd, paddings);
+    
+            moved['start'] = padding['start'];
+            padding['start'] += use_space; 
+            moved['stop'] = padding['start'];
+            padding['prev']['next'] = moved;
+            moved['prev'] = padding['prev'];
+            moved['next'] = padding;
+            padding['prev'] = moved;
+
+            // Push back the padding
+            push(padding, paddings);
+        } else {
+            // We cant move it...
+            // prio := [padding['stop'] - padding['start'], -padding['start']];
+            push(padding, paddings);
+            to_move = to_move['prev'];
+        }
+    } else to_move = to_move['prev'];
+    // print_all(head);
+}
+
+
+print('done');
+print_all(head);
+
+
+checksum := 0;
+ind := 0;
+curr := head;
+// print(last_real['stop']);
+while (ind += 1) < last_real['stop'] {
+    if curr['stop'] <= ind curr = curr['next'];
+    if curr['id'] >= 0 {
+
+    checksum += curr['id'] * ind;
+    print("adding ", curr['id'], "*",ind);
+        
+    }
+}
+print(checksum);
