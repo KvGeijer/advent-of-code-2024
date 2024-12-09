@@ -131,8 +131,7 @@ width = height = grid_len * cell_size
 pr.init_window(width, height, "Resonant Collinearity")
 
 pr.set_target_fps(15)
-pr.clear_background(pr.BLACK)
-time.sleep(4)
+
 
 for (i, (color, (freq, freq_steps))) in enumerate(zip(colors, steps)):
     pr.clear_background(pr.BLACK)
@@ -186,5 +185,6 @@ for ((y, x), freq, color_antenna) in antennas:
     pr.draw_text(freq, x*cell_size + 8, y*cell_size +
                  4, font_size, color_antenna)
 
+pr.end_drawing()
 time.sleep(10)
 pr.close_window()
