@@ -75,3 +75,15 @@ fn neighs8((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1], [x+1, y+1], [x+1,
 /// Computes 9 neighbors of a 2d coordinate
 fn neighs9((x, y)) -> [[x+1, y], [x-1, y], [x, y+1], [x, y-1], [x+1, y+1], [x+1, y-1], [x-1, y+1], [x-1, y-1], [x, y]];
 
+// TODO: THE following should probably be moved to stdlib
+
+// Get the key from a collection
+fn get(key, coll) -> coll[key];
+
+// The classic left fold from functional languages
+fn foldl(coll, acc, func) -> {
+	for item in coll acc = func(acc, item);
+	acc
+}
+
+
