@@ -2,33 +2,27 @@ include!("stdlib");
 include!("../aoc.zote");
 
 mat := read("input.txt") >> parse_matrix_dict >> list >> map(\(k, v) -> [k, int(v)]) >> dict;
-starts := mat >> keys >> filter(\>> get(mat) >> eq(0));
+ends := mat >> keys >> filter(\>> get(mat) >> eq(9));
 
-// All possible end locations
+// All paths from a trail start to the given position, by exhaustive search
 fn dfs(pos) -> {
     height := mat[pos];
-    if height == 9 return set([pos]);
-    pos >> neighs4 >> filter(\neigh -> get_or(neigh, mat, -1) == height + 1) >> map(dfs) >> foldl(set(), union)
+    if height == 0 return [[pos]];
+    pos >> neighs4 
+        >> filter(\>> get_or(mat, -1) >> eq(height - 1))
+        >> map(dfs)
+        >> concat
+        >> map(\>> append([pos]))
 }
 
 // Part 1
-starts >> map(\>> dfs >> len) >> sum >> print;
+ends >> map(\>> dfs >> map(\>> [0]) >> set >> keys) 
+    >> concat 
+    >> len 
+    >> print;
 
-// Part 2 (not very nice and functional)
-tot := 0;
-for start in starts {
-    paths := [[start]];
-    for h in [1:10] {
-        next := [];
-        for path in paths {
-            end := path[-1];
-            for neigh in neighs4(end) if get_or(neigh, mat, -1) == h {
-                // Found a new way up
-                push(path ++ [neigh], next);
-            }
-        }
-        paths = next;
-    }
-    tot += len(paths);
-}
-print(tot);
+// Part 2
+ends >> map(dfs) 
+    >> concat 
+    >> len 
+    >> print;
