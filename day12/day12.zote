@@ -1,0 +1,50 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+mat := read("input.txt") >> parse_matrix_dict;
+
+visited := set();
+
+fn dfs(pos, edges) -> {
+    if pos >> in(visited) return;
+    pos >> insert(visited);
+
+    for neigh in pos >> neighs4 {
+        if get_or(neigh, mat, nil) == mat[pos] {
+            dfs(neigh, edges);
+        } else {
+            [pos, neigh] >> insert(edges);
+        }
+    }
+}
+
+fn vadd((a, b), (c, d)) -> [a+c, b+d];
+fn vadd_edge(dir, (e1, e2)) -> [vadd(dir, e1), vadd(dir, e2)];
+
+fn count_sides(edges) -> {
+    sides := 0;
+    vis := set();
+    sort_edges := edges >> keys >> sort;
+
+    for (dir, eq_ind) in zip([[1, 0], [0, 1]], [0, 1])
+        for edge in sort_edges if !in(edge, vis) and edge[0][eq_ind] == edge[1][eq_ind] {
+            sides += 1;
+            while in(edge, edges) {
+                edge >> insert(vis);
+                edge = dir >> vadd_edge(edge);
+            }
+        }
+    sides
+} 
+
+p1 := 0;
+p2 := 0;
+for (pos, id) in mat if !in(pos, visited) {
+    start_len := len(visited);
+    edges := set();
+    dfs(pos, edges);
+    p1 += (len(visited) - start_len) * len(edges);
+    p2 += (len(visited) - start_len) * count_sides(edges);
+}
+print(p1);
+print(p2);
