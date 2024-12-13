@@ -4,15 +4,14 @@ include!("../aoc.zote");
 // Solves the linear system AX = B, with only integer solutions
 fn solve_int_lin(a, b) -> {
     det := a[0][0] * a[1][1] - a[0][1] * a[1][0];
-    det = det;
-    a_inv := [
+    a_inv_ish := [
         [ a[1][1], -a[0][1]],
         [-a[1][0],  a[0][0]]
     ];
 
     mult := [
-        a_inv[0][0] * b[0] + a_inv[0][1] * b[1],
-        a_inv[1][0] * b[0] + a_inv[1][1] * b[1]
+        a_inv_ish[0][0] * b[0] + a_inv_ish[0][1] * b[1],
+        a_inv_ish[1][0] * b[0] + a_inv_ish[1][1] * b[1]
     ];
 
     if mult >> all(\>> mod(det) >> eq(0)) mult >> map(\>> div(det))
