@@ -1,0 +1,75 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+robots := read("input.txt") >> split("\n") >> map(ints) >> map(\(px, py, vx, vy) -> [[px, py], [vx, vy]]);
+rows := 103;
+cols := 101;
+
+fn step((xp, yp), (xv, yv)) -> [(xp + xv) % cols, (yp + yv) % rows];
+
+fn step_all(robots) -> {
+    for robot in robots
+        robot[0] = step(robot[0], robot[1]);
+}
+
+
+// Just find the frame with the lowest standard deviation in positions. Very ugly calc now
+fn stds(robots) -> {
+    x_tot := 0;
+    y_tot := 0;
+    for ((px, py), _) in robots {
+        x_tot += px;
+        y_tot += py;
+    }
+    x_mean := x_tot/len(robots);
+    y_mean := y_tot/len(robots);
+
+    x_std := 0;
+    y_std := 0;
+    for ((px, py), _) in robots {
+        x_std += (x_mean - px)*(x_mean - px);
+        y_std += (y_mean - py)*(y_mean - py);
+    }
+    (x_std + y_std) / len(robots)
+}
+
+fn display(robots) -> {
+    poss := robots >> map(\>> [0]) >> set;
+    out := "";
+    for y in [0:rows] {
+        for x in [0:cols] {
+            c := if [x, y] >> in(poss) '#' else ' '; 
+            c >> push(out);
+        }
+        '\n' >> push(out);
+    }
+    print(out);
+}
+
+lowest := stds(robots);
+best := deepclone(robots);
+lowest_ind := 0;
+for round in [1:10000] {
+    step_all(robots);
+    std := stds(robots);
+    if std < lowest {
+        lowest = std;
+        best = deepclone(robots);
+        lowest_ind = round;
+    }
+
+    if round == 100
+        robots >> map(\>> [0]) >> map(\pos -> [ // The 4 quadrants
+                pos[0] < cols/2 and pos[1] < rows/2,
+                pos[0] > cols/2 and pos[1] < rows/2,
+                pos[0] < cols/2 and pos[1] > rows/2,
+                pos[0] > cols/2 and pos[1] > rows/2,
+            ])
+            >> foldl([0, 0, 0 ,0], \acc, val -> zip(acc, val) >> map(\(x, y) -> x + y))
+            >> prod
+            >> print;
+}
+
+display(best);
+print(lowest_ind);
+
