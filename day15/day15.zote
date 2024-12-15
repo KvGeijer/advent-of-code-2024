@@ -1,0 +1,51 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+(mat_str, instrs) := read("input.txt") >> split("\n\n") >> map(trim);
+instrs = instrs >> split("\n") >> join('') >> trim;
+mat := mat_str >> parse_matrix_dict;
+
+
+pos := nil;
+for (at, c) in mat if c == '@' {
+    mat[at] = '.';
+    pos = at;
+}
+
+fn vadd((x1, y1), (x2, y2)) -> [x1+x2, y1+y2];
+
+fn move(pos, dir) -> {
+    match mat[pos] {
+        '.' -> true,
+        '#' -> false,
+        'O' -> if move_box(vadd(pos, dir), dir) {
+                mat[pos] = '.';
+                true
+            } else false,
+    }
+}
+
+fn move_box(pos, dir) -> {
+    match mat[pos] {
+        '.' -> {
+            mat[pos] = 'O';
+            true
+        },
+        '#' -> false,
+        'O' -> move_box(vadd(pos, dir), dir),
+    }
+}
+
+for inst in instrs {
+    dir := match inst {
+        '>' -> [0, 1], 
+        '<' -> [0, -1], 
+        'v' -> [1, 0], 
+        '^' -> [-1, 0], 
+    };
+
+    to := vadd(pos, dir);
+    if move(to, dir) pos = to;
+}
+
+mat >> list >> filter(\(k, v) -> v == 'O') >> map(\((row, col), _) -> row*100 + col) >> sum >> print;
