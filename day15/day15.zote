@@ -1,51 +1,101 @@
 include!("stdlib");
 include!("../aoc.zote");
 
+fn vadd((x1, y1), (x2, y2)) -> [x1+x2, y1+y2];
+
 (mat_str, instrs) := read("input.txt") >> split("\n\n") >> map(trim);
 instrs = instrs >> split("\n") >> join('') >> trim;
 mat := mat_str >> parse_matrix_dict;
 
-
-pos := nil;
+start_pos := nil;
 for (at, c) in mat if c == '@' {
     mat[at] = '.';
-    pos = at;
+    start_pos = [at[0], at[1]*2];
 }
 
-fn vadd((x1, y1), (x2, y2)) -> [x1+x2, y1+y2];
+mat2 := dict();
+for ((row, col), c) in mat {
+    if c == 'O' {
+        mat2[[row, 2*col]] = [0, 1];
+        mat2[[row, 2*col + 1]] = [0, -1];
+    } else {
+        mat2[[row, 2*col]] = c;
+        mat2[[row, 2*col + 1]] = c;
+    }
+}
 
-fn move(pos, dir) -> {
+fn try_move(pos, dir, mat) -> {
     match mat[pos] {
         '.' -> true,
         '#' -> false,
-        'O' -> if move_box(vadd(pos, dir), dir) {
-                mat[pos] = '.';
+        box_dir -> {
+            if can_move_box(pos, dir, set(), mat) {
+                move_box(pos, dir, set(), mat);
                 true
-            } else false,
+            } else {
+                false
+            }
+        }
     }
 }
 
-fn move_box(pos, dir) -> {
+fn can_move_box(pos, dir, tried, mat) -> {
+    if pos >> in(tried) return true else pos >> insert(tried);
+
     match mat[pos] {
-        '.' -> {
-            mat[pos] = 'O';
-            true
-        },
+        '.' -> true,
         '#' -> false,
-        'O' -> move_box(vadd(pos, dir), dir),
+        box_dir -> 
+            can_move_box(pos >> vadd(box_dir), dir, tried, mat) and
+            can_move_box(pos >> vadd(dir), dir, tried, mat),
     }
 }
 
-for inst in instrs {
-    dir := match inst {
-        '>' -> [0, 1], 
-        '<' -> [0, -1], 
-        'v' -> [1, 0], 
-        '^' -> [-1, 0], 
-    };
+fn move_box(pos, dir, moved, mat) -> {
+    if pos >> in(moved) return else pos >> insert(moved);
 
-    to := vadd(pos, dir);
-    if move(to, dir) pos = to;
+    match mat[pos] {
+        '.' -> {},
+        '#' -> {},
+        box_dir -> {
+            move_box(pos >> vadd(box_dir), dir, moved, mat);
+            move_box(pos >> vadd(dir), dir, moved, mat);
+            mat[pos >> vadd(dir)] = mat[pos];
+            mat[pos] = '.';
+        }
+    }
 }
 
-mat >> list >> filter(\(k, v) -> v == 'O') >> map(\((row, col), _) -> row*100 + col) >> sum >> print;
+for col_mult in [2, 1] {
+    pos := start_pos;
+    mat := deepclone(mat2);
+    for inst in instrs {
+        dir := match inst {
+            '>' -> [0, col_mult], 
+            '<' -> [0, -col_mult], 
+            'v' -> [1, 0], 
+            '^' -> [-1, 0], 
+        };
+
+        to := vadd(pos, dir);
+        if try_move(to, dir, mat) pos = to;
+    }
+    mat >> list >> filter(\(k, v) -> v == [0, 1]) >> map(\((row, col), _) -> row*100 + col/col_mult) >> sum >> print;
+}
+
+// Kept for maybe helping visualization
+fn display(mat) -> {
+    (rows, cols) := mat >> keys >> maximum;
+    out := "";
+    for row in [0:rows + 1] {
+        for col in [0:cols+1] {
+            match mat[[row, col]] {
+                (0, 1) -> '[',
+                (0, -1) -> ']',
+                c -> c,
+            } >> push(out);
+        }
+        '\n' >> push(out);
+    }
+    print(out)
+}
