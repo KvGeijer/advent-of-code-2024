@@ -24,30 +24,15 @@ for ((row, col), c) in mat {
     }
 }
 
-fn try_move(pos, dir, mat) -> {
-    match mat[pos] {
-        '.' -> true,
-        '#' -> false,
-        box_dir -> {
-            if can_move_box(pos, dir, set(), mat) {
-                move_box(pos, dir, set(), mat);
-                true
-            } else {
-                false
-            }
-        }
-    }
-}
-
-fn can_move_box(pos, dir, tried, mat) -> {
+fn can_move(pos, dir, tried, mat) -> {
     if pos >> in(tried) return true else pos >> insert(tried);
 
     match mat[pos] {
         '.' -> true,
         '#' -> false,
         box_dir -> 
-            can_move_box(pos >> vadd(box_dir), dir, tried, mat) and
-            can_move_box(pos >> vadd(dir), dir, tried, mat),
+            can_move(pos >> vadd(box_dir), dir, tried, mat) and
+            can_move(pos >> vadd(dir), dir, tried, mat),
     }
 }
 
@@ -78,7 +63,10 @@ for col_mult in [2, 1] {
         };
 
         to := vadd(pos, dir);
-        if try_move(to, dir, mat) pos = to;
+        if can_move(to, dir, set(), mat) {
+            move_box(to, dir, set(), mat);
+            pos = to;  
+        } 
     }
     mat >> list >> filter(\(k, v) -> v == [0, 1]) >> map(\((row, col), _) -> row*100 + col/col_mult) >> sum >> print;
 }
