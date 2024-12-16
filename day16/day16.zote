@@ -1,0 +1,57 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+// Generic helper functions which should be part of ../aoc.zote
+fn vadd((x1, y1), (x2, y2)) -> [x1 + x2, y1 + y2];
+fn vsub((x1, y1), (x2, y2)) -> [x1 - x2, y1 - y2];
+fn rotl((row, col)) -> [-col, row];
+fn rotr((row, col)) -> [col, -row];
+
+mat := read("input.txt") >> parse_matrix_dict;
+
+start := nil;
+end := nil;
+for (pos, c) in mat {
+    mat[pos] = c != '#';
+    if c == "S" start = pos;
+    if c == "E" end = pos;
+}
+
+work := priority_queue();
+[start, [0, 1]] >> push_pq(0, work);
+vis := dict();
+
+final_state := nil;
+while work {
+    (dist, state) := pop(work);
+    if state >> in(vis) continue else vis[state] = dist;
+    (pos, dir) := state;
+    if pos == end {
+        print(-dist);
+        final_state = state; // Verified by hand that there is only one optimal path through the maze
+        break;
+    }
+
+    to := vadd(pos, dir);
+    if mat[to] [to, dir] >> push_pq(dist-1, work);
+    [pos, rotl(dir)] >> push_pq(dist - 1000, work);
+    [pos, rotr(dir)] >> push_pq(dist - 1000, work);
+}
+
+// Now, which positions are part of an optimal path?
+optimal := set();
+rev_vis := set();
+fn dfs(pos, dir, dist) -> {
+    if [pos, dir, dist] >> in(rev_vis) return else [pos, dir, dist] >> insert(rev_vis);
+
+    for (state, dist) in [[[pos >> vsub(dir), dir], dist + 1], [[pos, rotl(dir)], dist + 1000], [[pos, rotr(dir)], dist + 1000]] {
+        if state >> get_or(vis, nil) >> eq(dist) {
+            pos >> insert(optimal);
+            dfs(state[0], state[1], dist);
+        }
+    }
+}
+
+dfs(end, final_state[1], vis[final_state]);
+optimal >> len >> print;
+
