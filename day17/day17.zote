@@ -1,0 +1,131 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+(a, b, c) := read("input.txt") >> ints >> [:3];
+program := read("input.txt") >> ints >> [3:];
+
+out := [];
+
+fn exec(a) -> {
+    a >> bit_xor(6) >> bit_xor(bit_rshift(a, bit_xor(3, a) % 8)) >> mod(8)
+}
+
+while a {
+    exec(a) >> push(out);
+    a /= 8;
+}
+
+out >> map(str) >> join(",") >> print;
+
+candidates := []; 
+for i in [0:1024] if exec(i) == program[0] i >> push(candidates);
+
+for (i, output) in enumerate(program)[1:] {
+    print("\n\n\n\n\n\n\n\n\nDONE WITH ", i);
+    next := [];
+    for cand in candidates {
+        for j in [0:8] {
+            // What is the new total a at this stage?
+            new_tot := cand + bit_lshift(j, i*3 + 7);
+            // print("------");
+            // print(new_tot);
+            // print(exec(new_tot));
+            if exec(new_tot/8^i) == output
+                new_tot >> push(next);
+        }
+    }
+    candidates = next;
+}
+
+candidates >> print;
+// candidates >> filter(\>> bit_rshift(3*(len(program)-1)) >> eq(0)) >> print;
+print("Done");
+
+
+fn part1(a) -> {
+    out := [];
+    while a {
+        exec(a) >> push(out);
+        a /= 8;
+    }
+    out
+}
+
+for c in candidates {
+    // c >> part1 >> print;
+}
+program >> print;
+candidates >> filter(\>> part1 >> eq(program)) >> minimum >>  print;
+
+// candidates := [0];
+// for (i, output) in enumerate(program) {
+//     next := [];
+//     for a in [0:63] {
+//         for candidate in candidates {
+//             new_a := candidate + a*8^i;
+
+//         }
+//     }
+// }
+
+//fn combo(op) -> {
+//     match op {
+//         4 -> a,
+//         5 -> b,
+//         6 -> c,
+//         lit -> lit,
+//     }
+// }
+
+// fn exec() -> {
+//     combo_arg := combo(program[ip+1]);
+//     lit_arg := program[ip+1];
+//     print("EXEC ", ip, " ", program[ip], ": ", lit_arg, " ", combo_arg);
+//     print(a);
+//     print(b);
+//     print(c);
+//     match program[ip] {
+//         0 -> {
+//             a = floor(a/2^combo_arg);
+//             ip += 2;
+//         }
+//         1 -> {
+//             b = bit_xor(b, lit_arg);
+//             ip += 2;
+            
+//         }
+//         2 -> {
+//             b = combo_arg % 8;
+//             ip += 2;
+//         }
+//         3 -> {
+//             if a {
+//                ip = lit_arg; 
+//             } else {
+//                 ip += 2;
+//             }
+//         }
+//         4 -> {
+//             b = bit_xor(b, c);
+//             ip += 2;
+//         }
+//         5 -> {
+//             combo_arg % 8 >> push(out);
+//             print('------');
+//             print(a);
+//             print(b);
+//             print(c);
+//             print(combo_arg % 8);
+//             print('------');
+//             ip += 2;
+//         }
+//         6 -> {
+//             b = floor(a/2^combo_arg);
+//             ip += 2;
+//         }
+//         7 -> {
+//             c = floor(a/2^combo_arg) % 8;
+//             ip += 2;
+//         }
+//     }
+// }
