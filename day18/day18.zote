@@ -1,0 +1,44 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+falls := zip(read("input.txt") >> ints >> [::2], read("input.txt") >> ints >> [1::2]);
+size := 71;
+
+mat := dict();
+for x in [0:size] for y in [0:size] mat[[x, y]] = true;
+
+fn try_solve(falls) -> {
+    mat := deepclone(mat);
+    for fall in falls mat[fall] = false;
+    end := [size -1, size -1];
+    reach := [[0, 0]];
+    vis := set();
+    for round in [0:size^2] {
+        next := [];
+        for pos in reach if !in(pos, vis) {
+            if pos == end {
+                return round;
+            }
+            pos >> insert(vis);
+            for neigh in neighs4(pos) if get_or(neigh, mat, false) {
+                neigh >> push(next);
+            }
+        }
+        reach = next;
+    }
+    return nil;
+}
+try_solve(falls[:2024]) >> print;
+
+up := len(falls); // should not work
+down := 0; // should work
+
+while up - down > 1 {
+    mid := (up + down) /2;
+    if try_solve(falls[:mid]) {
+        down = mid;
+    } else {
+        up = mid;
+    }
+}
+falls[down] >> map(str) >> join(",") >> print;
