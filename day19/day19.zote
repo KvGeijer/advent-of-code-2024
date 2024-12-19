@@ -1,0 +1,25 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+(av, pat) := read("input.txt") >> split('\n\n');
+available := av >> split(", ") >> set;
+patterns := pat >> split("\n");
+
+longest := available >> keys >> map(len) >> maximum;
+paths := dict();
+fn dfs(target, ind) -> {
+    if ind == len(target) return 1;
+    if [target, ind] >> in(paths) return paths[[target, ind]];
+    ways := 0;
+
+    for i in [1:longest+1] if ind + i <= len(target) {
+        sub := target[ind:ind+i];
+        if sub >> in(available) 
+            ways += dfs(target, ind + i);        
+    }
+
+    paths[[target, ind]] = ways
+}
+
+patterns >> map(\>> dfs(0) >> bool) >> sum >> print; 
+patterns >> map(\>> dfs(0)) >> sum >> print; 
