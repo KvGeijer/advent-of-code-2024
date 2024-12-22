@@ -1,0 +1,43 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+mix := bit_xor;
+prune := \>> mod(16777216); // 2^24
+fn last(nbr) -> str(nbr)[-1] >> int;
+
+fn evolve(secret) -> {
+    // Can do bit magic to speed this up? Powers of two
+    secret = secret >> mix(secret*64) >> prune;    
+    secret = secret >> mix(secret/32) >> prune;    
+    secret = secret >> mix(secret*2048) >> prune;    
+    secret
+}
+
+counts := dict();
+fn analyze_evolves(secret, count) -> {
+    vis := set();
+    hist := [];
+    last_price := last(secret);
+    for _ in [0:count] {
+        secret = evolve(secret);
+        price := last(secret);
+        (price - last_price) >> push(hist);
+        last_price = price;
+        
+        if len(hist) == 5 hist = hist[1:];
+        if len(hist) == 4 {
+            if !in(hist, vis) {
+                hist >> insert(vis);
+                counts[hist] = get_or(hist, counts, 0) + last_price;
+            }
+        
+        }
+    }
+
+    secret
+}
+
+read("input.txt") >> ints >> map(\>> analyze_evolves(2000)) >> sum >> print;
+counts >> values >> maximum >> print;
+
+
