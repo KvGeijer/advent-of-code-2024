@@ -1,0 +1,32 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+conns := dict();
+
+for pair in read("input.txt") >> split("\n") >> map(\>>split('-')) for (from, to) in [pair, rev(pair)] {
+    if !in(from, conns) conns[from] = set();
+    to >> insert(conns[from]);
+}
+comps := conns >> keys >> sort; 
+
+trios := set();
+for (from, tos) in conns if from[0] == 't' for to1 in tos >> keys for to2 in tos >> keys if to2 >> in(conns[to1]) {
+    [from, to1, to2] >> sort >> insert(trios);
+}
+
+trios >> len >> print;
+
+best := [];
+fn dfs(clique, neighs, comps) -> {
+    if clique >> len >> gt(len(best)) 
+        best = clique;
+    for (i, comp) in comps >> enumerate if comp >> in(neighs) {
+            // Branch on adding it to the clique or not
+            new_neighs := intersect(neighs, conns[comp]);
+            new_clique := clique ++ [comp];
+            dfs(new_clique, new_neighs, comps[i+1:]);
+    }
+}
+
+dfs([], set(comps), comps);
+best >> join(',') >> print;
