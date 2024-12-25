@@ -1,0 +1,41 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+(init_txt, conns_txt) := read("input.txt") >> split("\n\n") >> map(\>> split("\n"));
+initial := init_txt >> map(\>> split(": ") >> \(key, val) -> [key, val == "1"]) >> dict;
+connections := conns_txt >> map(\>> split(" -> ") >> \(expr, res) -> [res, expr >> split(' ')]) >> dict; 
+
+blockers := union(initial, connections) >> map(\(k, _) -> [k, []]) >> dict;
+for (unblock, (x, _, y)) in connections
+    for blocker in [x, y]
+        push(unblock, blockers[blocker]);
+
+// Evaluates the final state of all wires, using a dfs search on unblocked calculations
+fn eval(conns, init) -> {
+    state := init >> clone;
+
+    for key in init >> keys for unblocked in blockers[key] if !in(unblocked, state) {
+        dfs(unblocked, conns, state);
+    }
+    state
+}
+
+fn dfs(wire, conns, state) -> {
+    // We know the wire is not calculated already, but not that it is ready
+    (x, op, y) := conns[wire];
+    if !in(x, state) or !in(y, state) return;
+
+    state[wire] = match op {
+        "OR" -> state[x] or state[y],
+        "AND" -> state[x] and state[y],
+        "XOR" -> state[x] != state[y],
+    };
+    for unblocked in blockers[wire] if !in(unblocked, state)
+        dfs(unblocked, conns, state);
+}
+
+fn get_nbr(state, char) -> {
+    state >> list >> filter(\(k, _) -> k[0] == char) >> sort >> rev >> map(\>> [1]) >> foldl(0, \acc, v -> acc*2 + v)    
+}
+
+eval(connections, initial) >> get_nbr('z') >> print;
