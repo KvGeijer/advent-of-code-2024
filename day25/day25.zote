@@ -1,0 +1,9 @@
+include!("stdlib");
+include!("../aoc.zote");
+
+input := read("input.txt") >> split("\n\n") >> map(\>> parse_matrix_dict);
+
+clear := 0;
+for x in input for y in input if x[[0, 0]] == '#'
+    clear += x >> keys >> all(\p -> x[p] != y[p] or x[p] == '.');
+clear >> print;
